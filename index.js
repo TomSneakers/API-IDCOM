@@ -1,41 +1,26 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
 const cron = require('node-cron');
 const { Expo } = require('expo-server-sdk');
+const mongoose = require('mongoose');
 const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
+require('dotenv').config();
 
 const expo = new Expo();
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 app.use(express.json());
 app.use(cors());
 
-const uri = process.env.MONGODB_URI;
-
-if (!uri) {
-    console.error('MongoDB URI not set in environment variables');
-    process.exit(1);
-}
-
-console.log('Mongo URI:', uri);  // Affiche l'URI pour le débogage
-
-// Connexion à MongoDB avec gestion des erreurs
-mongoose.connect(uri).then(
-    () => { console.log('Connected to MongoDB'); },
-    err => { console.error('Error connecting to MongoDB:', err); }
-);
-
-// Middleware pour vérifier la connexion à MongoDB
-app.use(async (req, res, next) => {
-    if (mongoose.connection.readyState !== 1) {
-        console.error('Mongoose not connected');
-        return res.status(500).json({ error: 'Database not connected' });
-    }
-    next();
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('Connected to MongoDB');
+}).catch((error) => {
+    console.error('MongoDB connection error:', error);
 });
 
 app.use('/auth', authRoutes);
