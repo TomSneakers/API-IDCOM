@@ -7,7 +7,7 @@ const router = express.Router();
 const JWT_SECRET = 'your_jwt_secret';
 
 // Signup
-router.post('/signup', async (req, res) => {
+router.post('/api/signup', async (req, res) => {
     const { username, password } = req.body;
     const user = new User({ username, password });
     await user.save();
@@ -15,7 +15,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // Login
-router.post('/login', async (req, res) => {
+router.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
 
