@@ -1,42 +1,51 @@
+require('dotenv').config();
+const { MongoClient } = require('mongodb');
+const mongoose = require('mongoose');
 const cron = require('node-cron');
 const { Expo } = require('expo-server-sdk');
-const mongoose = require('mongoose');
 const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 
-
-
-
 const expo = new Expo();
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cors());
 
-const uri = 'mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester';
+const uri = process.env.MONGO_URI || 'mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester';
 
-const options = {
+let database;
+let client;
+let urlCollection;
+let tokenCollection;
+
+const connectToMongoDB = async () => {
+    try {
+        client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+        await client.connect();
+        console.log('Connected to MongoDB');
+        database = client.db('url_tester');
+        urlCollection = database.collection('urls');
+        tokenCollection = database.collection('tokens');
+    } catch (error) {
+        console.error('Error connecting to MongoDB:', error);
+        setTimeout(connectToMongoDB, 5000); // Retry after 5 seconds
+    }
+};
+
+connectToMongoDB();
+
+const mongooseOptions = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 10000, // 10 seconds
-    heartbeatFrequencyMS: 20000 // 20 seconds
+    serverSelectionTimeoutMS: 10000,
+    heartbeatFrequencyMS: 20000
 };
 
-
-const connectWithRetry = () => {
-    console.log('MongoDB connection with retry');
-    mongoose.connect(uri, options).then(() => {
-        console.log('MongoDB is connected');
-    }).catch(err => {
-        console.log('MongoDB connection unsuccessful, retry after 5 seconds.', err);
-        setTimeout(connectWithRetry, 5000);
-    });
-};
-
-connectWithRetry();
+mongoose.connect(uri, mongooseOptions);
 
 mongoose.connection.on('connected', () => {
     console.log('Mongoose connected to DB Cluster');
@@ -87,7 +96,6 @@ const testUrls = async (urls) => {
         return { url: urlObj.url, status };
     }));
 };
-
 
 const sendNotification = async (title, message) => {
     try {
@@ -155,7 +163,6 @@ cron.schedule('0 7,12,20 * * *', async () => {
         console.error('Error during scheduled task:', error);
     }
 }, { timezone: "Europe/Paris" });
-// tets
 
 app.get('/urls-with-status', async (req, res) => {
     try {
@@ -234,7 +241,6 @@ app.get('/test-all-urls', async (req, res) => {
     }
 });
 
-
 app.get('/get-tokens', async (req, res) => {
     try {
         const tokens = await Token.find({});
@@ -295,10 +301,6 @@ app.put('/update-url', async (req, res) => {
         res.status(500).json({ error: 'Error updating URL' });
     }
 });
-
-
-
-
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at http://0.0.0.0:${port}`);
