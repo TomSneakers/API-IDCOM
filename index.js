@@ -2,17 +2,10 @@ require('dotenv').config();
 const cron = require('node-cron');
 const { Expo } = require('expo-server-sdk');
 const mongoose = require('mongoose');
-const axios = require('axios');
 const express = require('express');
-const cors = require('cors');
-const authRoutes = require('./routes/auth');
-
-const expo = new Expo();
 const app = express();
-const port = process.env.PORT || 3000;
+const authRoutes = require('./authRoutes'); // Assurez-vous que ce chemin est correct
 
-app.use(express.json());
-app.use(cors());
 const uri = process.env.MONGODB_URI;
 
 if (!uri) {
@@ -20,13 +13,17 @@ if (!uri) {
     process.exit(1);
 }
 
-console.log('Mongo URI:', uri);  // Affiche l'URI pour le débogage
+console.log('Mongo URI:', uri); // Affiche l'URI pour le débogage
 
 // Connexion à MongoDB avec gestion des erreurs
-mongoose.connect(uri).then(
-    () => { console.log('Connected to MongoDB'); },
-    err => { console.error('Error connecting to MongoDB:', err); }
-);
+mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => {
+        console.log('Connected to MongoDB');
+    })
+    .catch(err => {
+        console.error('Error connecting to MongoDB:', err);
+        process.exit(1);
+    });
 
 // Vérifier si le modèle 'Url' existe déjà
 let Url;
@@ -59,11 +56,10 @@ app.use(async (req, res, next) => {
 
 app.use('/auth', authRoutes);
 
-
-
 const tokenSchema = new mongoose.Schema({
     token: { type: String, required: true }
 });
+
 const Token = mongoose.model('Token', tokenSchema);
 
 const testUrls = async (urls) => {
@@ -298,6 +294,6 @@ app.put('/update-url', async (req, res) => {
 
 
 
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running at http://0.0.0.0:${port}`);
+app.listen(3000, () => {
+    console.log('Server is running on port 3000');
 });
