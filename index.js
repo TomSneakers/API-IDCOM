@@ -4,12 +4,17 @@ const { Expo } = require('expo-server-sdk');
 const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
-const authRoutes = require('./routes/auth'); // Assurez-vous que ce chemin est correct
+const authRoutes = require('./authRoutes'); // Assurez-vous que ce chemin est correct
 
 const uri = process.env.MONGODB_URI;
 
 if (!uri) {
     console.error('MongoDB URI not set in environment variables');
+    process.exit(1);
+}
+
+if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
+    console.error('Invalid MongoDB URI scheme. Expected "mongodb://" or "mongodb+srv://".');
     process.exit(1);
 }
 
