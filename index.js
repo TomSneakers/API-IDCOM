@@ -5,7 +5,7 @@ const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('../API/routes/auth');
-require('dotenv').config();
+
 
 
 
@@ -14,9 +14,9 @@ const app = express();
 const port = 3000;
 
 app.use(express.json());
-app.use(cors()); // Assurez-vous d'utiliser cors ici
+app.use(cors());
 
-mongoose.connect(process.env.DATABASE_URL, {
+mongoose.connect("mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester", {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }).then(() => {
