@@ -91,11 +91,9 @@ const sendNotification = async (title, message) => {
         console.error('Error preparing notifications:', error);
     }
 };
-app.use('/api/home', () => {
-    return res.send('Welcome to the home page');
-}
-);
-
+app.get('/api/home', (req, res) => {
+    res.send('Welcome to the home page');
+});
 app.post('/add-token', async (req, res) => {
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: 'Missing token' });
