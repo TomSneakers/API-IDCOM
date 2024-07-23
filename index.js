@@ -237,6 +237,7 @@ app.get('/test-all-urls', async (req, res) => {
 app.get('/get-tokens', async (req, res) => {
     try {
         const tokens = await Token.find({});
+        console.log('Tokens:', tokens);
         res.json(tokens);
     } catch (error) {
         console.error('Error fetching tokens:', error);
