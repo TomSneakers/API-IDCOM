@@ -16,13 +16,37 @@ const port = 3000;
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect("mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester", {
+const uri = 'mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester';
+
+const options = {
     useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => {
-    console.log('Connected to MongoDB');
-}).catch((error) => {
-    console.error('MongoDB connection error:', error);
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000,
+    heartbeatFrequencyMS: 10000
+};
+
+const connectWithRetry = () => {
+    console.log('MongoDB connection with retry');
+    mongoose.connect(uri, options).then(() => {
+        console.log('MongoDB is connected');
+    }).catch(err => {
+        console.log('MongoDB connection unsuccessful, retry after 5 seconds.', err);
+        setTimeout(connectWithRetry, 5000);
+    });
+};
+
+connectWithRetry();
+
+mongoose.connection.on('connected', () => {
+    console.log('Mongoose connected to DB Cluster');
+});
+
+mongoose.connection.on('error', (error) => {
+    console.error('Mongoose connection error:', error);
+});
+
+mongoose.connection.on('disconnected', () => {
+    console.log('Mongoose disconnected');
 });
 
 app.use('/auth', authRoutes);
