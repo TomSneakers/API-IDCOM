@@ -1,70 +1,42 @@
-require('dotenv').config();
 const cron = require('node-cron');
 const { Expo } = require('expo-server-sdk');
 const mongoose = require('mongoose');
+const axios = require('axios');
 const express = require('express');
+const cors = require('cors');
+const authRoutes = require('./routes/auth');
+require('dotenv').config();
+
+const expo = new Expo();
 const app = express();
-const authRoutes = require('./routes/auth'); // Assurez-vous que ce chemin est correct
+const port = 3000;
 
-const uri = process.env.MONGODB_URI;
+app.use(express.json());
+app.use(cors()); // Assurez-vous d'utiliser cors ici
 
-if (!uri) {
-    console.error('MongoDB URI not set in environment variables');
-    process.exit(1);
-}
-
-if (!uri.startsWith('mongodb://') && !uri.startsWith('mongodb+srv://')) {
-    console.error('Invalid MongoDB URI scheme. Expected "mongodb://" or "mongodb+srv://".');
-    process.exit(1);
-}
-
-console.log('Mongo URI:', uri); // Affiche l'URI pour le débogage
-
-// Connexion à MongoDB avec gestion des erreurs
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
         console.log('Connected to MongoDB');
     })
-    .catch(err => {
-        console.error('Error connecting to MongoDB:', err);
-        process.exit(1);
+    .catch((error) => {
+        console.error('MongoDB connection error:', error);
     });
 
-// Vérifier si le modèle 'Url' existe déjà
-let Url;
-try {
-    Url = mongoose.model('Url');
-} catch (error) {
-    if (error.name === 'MissingSchemaError') {
-        // Définir le schéma URL
-        const urlSchema = new mongoose.Schema({
-            originalUrl: { type: String, required: true },
-            shortUrl: { type: String, required: true },
-            date: { type: Date, default: Date.now }
-        });
+app.use('/auth', authRoutes);
 
-        // Créer le modèle URL
-        Url = mongoose.model('Url', urlSchema);
-    } else {
-        throw error;
-    }
-}
-
-// Middleware pour vérifier la connexion à MongoDB
-app.use(async (req, res, next) => {
-    if (mongoose.connection.readyState !== 1) {
-        console.error('Mongoose not connected');
-        return res.status(500).json({ error: 'Database not connected' });
-    }
-    next();
+const urlSchema = new mongoose.Schema({
+    url: { type: String, required: true },
+    statusHistory: [{
+        status: { type: Number },
+        timestamp: { type: Date, default: Date.now }
+    }]
 });
 
-app.use('/auth', authRoutes);
+const Url = mongoose.model('Url', urlSchema);
 
 const tokenSchema = new mongoose.Schema({
     token: { type: String, required: true }
 });
-
 const Token = mongoose.model('Token', tokenSchema);
 
 const testUrls = async (urls) => {
@@ -299,6 +271,6 @@ app.put('/update-url', async (req, res) => {
 
 
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running at http://0.0.0.0:${port}`);
 });
