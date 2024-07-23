@@ -91,7 +91,7 @@ const sendNotification = async (title, message) => {
         console.error('Error preparing notifications:', error);
     }
 };
-app.use('/home', (req, res) => {
+app.use('/home', () => {
     return res.send('Welcome to the home page');
 }
 );
