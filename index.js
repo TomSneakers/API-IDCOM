@@ -1,49 +1,26 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
 const cron = require('node-cron');
 const { Expo } = require('expo-server-sdk');
+const mongoose = require('mongoose');
 const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
+const authRoutes = require('../API/routes/auth');
+require('dotenv').config();
 
 const expo = new Expo();
 const app = express();
-const port = process.env.PORT || 3000;
+const port = 3000;
 
 app.use(express.json());
-app.use(cors());
+app.use(cors()); // Assurez-vous d'utiliser cors ici
 
-const uri = process.env.MONGODB_URI;
-
-if (!uri) {
-    console.error('MongoDB URI not set in environment variables');
-    process.exit(1);
-}
-
-console.log('Mongo URI:', uri);  // Affiche l'URI pour le débogage
-
-// Configuration de la connexion Mongoose avec des options améliorées
-const mongooseOptions = {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 30000, // 30 seconds
-    heartbeatFrequencyMS: 20000 // 20 seconds
-};
-
-// Connexion à MongoDB avec gestion des erreurs
-mongoose.connect(uri, mongooseOptions).then(
-    () => { console.log('Connected to MongoDB'); },
-    err => { console.error('Error connecting to MongoDB:', err); }
-);
-
-// Middleware pour vérifier la connexion à MongoDB
-app.use(async (req, res, next) => {
-    if (mongoose.connection.readyState !== 1) {
-        console.error('Mongoose not connected');
-        return res.status(500).json({ error: 'Database not connected' });
-    }
-    next();
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('Connected to MongoDB');
+}).catch((error) => {
+    console.error('MongoDB connection error:', error);
 });
 
 app.use('/auth', authRoutes);
@@ -83,6 +60,7 @@ const testUrls = async (urls) => {
         return { url: urlObj.url, status };
     }));
 };
+
 
 const sendNotification = async (title, message) => {
     try {
@@ -150,6 +128,7 @@ cron.schedule('0 7,12,20 * * *', async () => {
         console.error('Error during scheduled task:', error);
     }
 }, { timezone: "Europe/Paris" });
+
 
 app.get('/urls-with-status', async (req, res) => {
     try {
@@ -228,10 +207,10 @@ app.get('/test-all-urls', async (req, res) => {
     }
 });
 
+
 app.get('/get-tokens', async (req, res) => {
     try {
         const tokens = await Token.find({});
-        console.log('Tokens:', tokens);
         res.json(tokens);
     } catch (error) {
         console.error('Error fetching tokens:', error);
@@ -289,6 +268,10 @@ app.put('/update-url', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+
+
+
+
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running at http://0.0.0.0:${port}`);
 });
