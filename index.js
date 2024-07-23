@@ -4,7 +4,7 @@ const { Expo } = require('expo-server-sdk');
 const mongoose = require('mongoose');
 const express = require('express');
 const app = express();
-const authRoutes = require('./authRoutes'); // Assurez-vous que ce chemin est correct
+const authRoutes = require('./routes/auth'); // Assurez-vous que ce chemin est correct
 
 const uri = process.env.MONGODB_URI;
 
