@@ -15,7 +15,9 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
-const uri = process.env.MONGO_URI || 'mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester';
+const uri = "mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester";
+
+console.log('Mongo URI:', uri);  // Affiche l'URI pour le débogage
 
 // Configuration de la connexion Mongoose avec des options améliorées
 const mongooseOptions = {
@@ -24,6 +26,27 @@ const mongooseOptions = {
     serverSelectionTimeoutMS: 30000, // 30 seconds
     heartbeatFrequencyMS: 20000 // 20 seconds
 };
+
+// Middleware pour vérifier la connexion à MongoDB
+app.use(async (req, res, next) => {
+    if (mongoose.connection.readyState !== 1) {
+        console.error('Mongoose not connected');
+        return res.status(500).json({ error: 'Database not connected' });
+    }
+    next();
+});
+
+// Test de la connexion MongoDB native
+(async () => {
+    try {
+        const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+        await client.connect();
+        console.log('Connected to MongoDB using native driver');
+        await client.close();
+    } catch (err) {
+        console.error('Error connecting to MongoDB using native driver:', err);
+    }
+})();
 
 mongoose.connect(uri, mongooseOptions).then(() => {
     console.log('Mongoose connected to DB Cluster');
@@ -43,7 +66,6 @@ mongoose.connection.on('error', (error) => {
 mongoose.connection.on('disconnected', () => {
     console.log('Mongoose disconnected');
 });
-
 app.use('/auth', authRoutes);
 
 const urlSchema = new mongoose.Schema({
