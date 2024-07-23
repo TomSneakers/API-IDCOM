@@ -21,9 +21,10 @@ const uri = 'mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.n
 const options = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000,
-    heartbeatFrequencyMS: 10000
+    serverSelectionTimeoutMS: 10000, // 10 seconds
+    heartbeatFrequencyMS: 20000 // 20 seconds
 };
+
 
 const connectWithRetry = () => {
     console.log('MongoDB connection with retry');
