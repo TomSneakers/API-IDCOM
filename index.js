@@ -14,7 +14,7 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
-const uri = "mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester";
+const uri = process.env.MONGODB_URI;
 
 if (!uri) {
     console.error('MongoDB URI not set in environment variables');
