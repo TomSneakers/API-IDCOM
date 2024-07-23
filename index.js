@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
-const authRoutes = require('../API/routes/auth');
+const authRoutes = require('./routes/auth');
 require('dotenv').config();
 
 const expo = new Expo();
