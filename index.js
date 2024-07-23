@@ -13,7 +13,6 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cors());
-
 const uri = process.env.MONGODB_URI;
 
 if (!uri) {
@@ -29,15 +28,25 @@ mongoose.connect(uri).then(
     err => { console.error('Error connecting to MongoDB:', err); }
 );
 
-// Définir le schéma URL
-const urlSchema = new mongoose.Schema({
-    originalUrl: { type: String, required: true },
-    shortUrl: { type: String, required: true },
-    date: { type: Date, default: Date.now }
-});
+// Vérifier si le modèle 'Url' existe déjà
+let Url;
+try {
+    Url = mongoose.model('Url');
+} catch (error) {
+    if (error.name === 'MissingSchemaError') {
+        // Définir le schéma URL
+        const urlSchema = new mongoose.Schema({
+            originalUrl: { type: String, required: true },
+            shortUrl: { type: String, required: true },
+            date: { type: Date, default: Date.now }
+        });
 
-// Créer le modèle URL
-const Url = mongoose.model('Url', urlSchema);
+        // Créer le modèle URL
+        Url = mongoose.model('Url', urlSchema);
+    } else {
+        throw error;
+    }
+}
 
 // Middleware pour vérifier la connexion à MongoDB
 app.use(async (req, res, next) => {
@@ -50,7 +59,7 @@ app.use(async (req, res, next) => {
 
 app.use('/auth', authRoutes);
 
-const Url = mongoose.model('Url', urlSchema);
+
 
 const tokenSchema = new mongoose.Schema({
     token: { type: String, required: true }
