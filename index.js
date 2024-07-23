@@ -12,7 +12,7 @@ const app = express();
 const port = process.env.PORT;
 
 app.use(express.json());
-app.use(cors()); // Assurez-vous d'utiliser cors ici
+app.use(cors());
 
 mongoose.connect("mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/")
     .then(() => {
@@ -38,6 +38,8 @@ const tokenSchema = new mongoose.Schema({
     token: { type: String, required: true }
 });
 const Token = mongoose.model('Token', tokenSchema);
+
+
 
 const testUrls = async (urls) => {
     return Promise.all(urls.map(async (urlObj) => {
@@ -89,6 +91,10 @@ const sendNotification = async (title, message) => {
         console.error('Error preparing notifications:', error);
     }
 };
+app.use('/home', (req, res) => {
+    return res.send('Welcome to the home page');
+}
+);
 
 app.post('/add-token', async (req, res) => {
     const { token } = req.body;
