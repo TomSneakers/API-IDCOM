@@ -14,7 +14,7 @@ const port = process.env.PORT;
 app.use(express.json());
 app.use(cors()); // Assurez-vous d'utiliser cors ici
 
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect("mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/")
     .then(() => {
         console.log('Connected to MongoDB');
     })
