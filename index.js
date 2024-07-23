@@ -17,35 +17,20 @@ app.use(cors());
 
 const uri = process.env.MONGO_URI || 'mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester';
 
-let database;
-let client;
-let urlCollection;
-let tokenCollection;
-
-const connectToMongoDB = async () => {
-    try {
-        client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-        await client.connect();
-        console.log('Connected to MongoDB');
-        database = client.db('url_tester');
-        urlCollection = database.collection('urls');
-        tokenCollection = database.collection('tokens');
-    } catch (error) {
-        console.error('Error connecting to MongoDB:', error);
-        setTimeout(connectToMongoDB, 5000); // Retry after 5 seconds
-    }
-};
-
-connectToMongoDB();
-
+// Configuration de la connexion Mongoose avec des options améliorées
 const mongooseOptions = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 10000,
-    heartbeatFrequencyMS: 20000
+    serverSelectionTimeoutMS: 30000, // 30 seconds
+    heartbeatFrequencyMS: 20000 // 20 seconds
 };
 
-mongoose.connect(uri, mongooseOptions);
+mongoose.connect(uri, mongooseOptions).then(() => {
+    console.log('Mongoose connected to DB Cluster');
+}).catch((error) => {
+    console.error('Mongoose connection error:', error);
+    setTimeout(() => mongoose.connect(uri, mongooseOptions), 5000); // Retry after 5 seconds
+});
 
 mongoose.connection.on('connected', () => {
     console.log('Mongoose connected to DB Cluster');
