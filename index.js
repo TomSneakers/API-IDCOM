@@ -14,6 +14,8 @@ const port = process.env.PORT;
 app.use(express.json());
 app.use(cors());
 
+console.log(`Connecting to MongoDB URI: ${process.env.MONGODB_URI}`);
+
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
         console.log('Connected to MongoDB');
