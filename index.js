@@ -1,5 +1,4 @@
 require('dotenv').config();
-const { MongoClient } = require('mongodb');
 const mongoose = require('mongoose');
 const cron = require('node-cron');
 const { Expo } = require('expo-server-sdk');
@@ -17,6 +16,11 @@ app.use(cors());
 
 const uri = "mongodb+srv://tomdesvignes031:Quentind31@cluster0.nlxrghj.mongodb.net/url_tester";
 
+if (!uri) {
+    console.error('MongoDB URI not set in environment variables');
+    process.exit(1);
+}
+
 console.log('Mongo URI:', uri);  // Affiche l'URI pour le débogage
 
 // Configuration de la connexion Mongoose avec des options améliorées
@@ -27,6 +31,12 @@ const mongooseOptions = {
     heartbeatFrequencyMS: 20000 // 20 seconds
 };
 
+// Connexion à MongoDB avec gestion des erreurs
+mongoose.connect(uri, mongooseOptions).then(
+    () => { console.log('Connected to MongoDB'); },
+    err => { console.error('Error connecting to MongoDB:', err); }
+);
+
 // Middleware pour vérifier la connexion à MongoDB
 app.use(async (req, res, next) => {
     if (mongoose.connection.readyState !== 1) {
@@ -36,36 +46,6 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// Test de la connexion MongoDB native
-(async () => {
-    try {
-        const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-        await client.connect();
-        console.log('Connected to MongoDB using native driver');
-        await client.close();
-    } catch (err) {
-        console.error('Error connecting to MongoDB using native driver:', err);
-    }
-})();
-
-mongoose.connect(uri, mongooseOptions).then(() => {
-    console.log('Mongoose connected to DB Cluster');
-}).catch((error) => {
-    console.error('Mongoose connection error:', error);
-    setTimeout(() => mongoose.connect(uri, mongooseOptions), 5000); // Retry after 5 seconds
-});
-
-mongoose.connection.on('connected', () => {
-    console.log('Mongoose connected to DB Cluster');
-});
-
-mongoose.connection.on('error', (error) => {
-    console.error('Mongoose connection error:', error);
-});
-
-mongoose.connection.on('disconnected', () => {
-    console.log('Mongoose disconnected');
-});
 app.use('/auth', authRoutes);
 
 const urlSchema = new mongoose.Schema({
@@ -309,6 +289,6 @@ app.put('/update-url', async (req, res) => {
     }
 });
 
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Server running at http://0.0.0.0:${port}`);
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
