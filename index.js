@@ -1,5 +1,4 @@
 require('dotenv').config();
-const mongoose = require('mongoose');
 const cron = require('node-cron');
 const { Expo } = require('expo-server-sdk');
 const mongoose = require('mongoose');
@@ -7,7 +6,6 @@ const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
-require('dotenv').config();
 
 const expo = new Expo();
 const app = express();
