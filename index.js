@@ -29,6 +29,16 @@ mongoose.connect(uri).then(
     err => { console.error('Error connecting to MongoDB:', err); }
 );
 
+// Définir le schéma URL
+const urlSchema = new mongoose.Schema({
+    originalUrl: { type: String, required: true },
+    shortUrl: { type: String, required: true },
+    date: { type: Date, default: Date.now }
+});
+
+// Créer le modèle URL
+const Url = mongoose.model('Url', urlSchema);
+
 // Middleware pour vérifier la connexion à MongoDB
 app.use(async (req, res, next) => {
     if (mongoose.connection.readyState !== 1) {
@@ -38,8 +48,6 @@ app.use(async (req, res, next) => {
     next();
 });
 
-
-//authRoutes
 app.use('/auth', authRoutes);
 
 const Url = mongoose.model('Url', urlSchema);
