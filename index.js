@@ -94,7 +94,7 @@ const sendNotification = async (title, message) => {
 app.get('/api/home', (req, res) => {
     res.send('Welcome to the home page');
 });
-app.post('/add-token', async (req, res) => {
+app.post('/api/add-token', async (req, res) => {
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: 'Missing token' });
     if (!Expo.isExpoPushToken(token)) return res.status(400).json({ error: 'Invalid token' });
@@ -133,7 +133,7 @@ cron.schedule('0 7,12,20 * * *', async () => {
 }, { timezone: "Europe/Paris" });
 
 
-app.get('/urls-with-status', async (req, res) => {
+app.get('/api/urls-with-status', async (req, res) => {
     try {
         const urls = await Url.find({});
         const results = await testUrls(urls.map(u => u.url));
@@ -148,7 +148,7 @@ app.get('/urls-with-status', async (req, res) => {
     }
 });
 
-app.get('/urls-with-status-history', async (req, res) => {
+app.get('/api/urls-with-status-history', async (req, res) => {
     try {
         const urls = await Url.find({});
         res.json(urls);
@@ -158,7 +158,7 @@ app.get('/urls-with-status-history', async (req, res) => {
     }
 });
 
-app.post('/add-url', async (req, res) => {
+app.post('/api/add-url', async (req, res) => {
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: 'Missing URL' });
 
@@ -172,7 +172,7 @@ app.post('/add-url', async (req, res) => {
     }
 });
 
-app.get('/get-urls', async (req, res) => {
+app.get('/api/get-urls', async (req, res) => {
     try {
         const urls = await Url.find({});
         res.json(urls);
@@ -182,7 +182,7 @@ app.get('/get-urls', async (req, res) => {
     }
 });
 
-app.post('/test-urls', async (req, res) => {
+app.post('/api/test-urls', async (req, res) => {
     const { urls } = req.body;
     if (!urls || !Array.isArray(urls)) return res.status(400).json({ error: 'Invalid URL list' });
 
@@ -195,7 +195,7 @@ app.post('/test-urls', async (req, res) => {
     }
 });
 
-app.get('/test-all-urls', async (req, res) => {
+app.get('/api/test-all-urls', async (req, res) => {
     try {
         const urls = await Url.find({}).lean();
         const urlStrings = urls.map(u => u.url);
@@ -211,7 +211,7 @@ app.get('/test-all-urls', async (req, res) => {
 });
 
 
-app.get('/get-tokens', async (req, res) => {
+app.get('/api/get-tokens', async (req, res) => {
     try {
         const tokens = await Token.find({});
         res.json(tokens);
@@ -221,7 +221,7 @@ app.get('/get-tokens', async (req, res) => {
     }
 });
 
-app.delete('/delete-url', async (req, res) => {
+app.delete('/api/delete-url', async (req, res) => {
     const { url } = req.body;
     console.log('Request to delete URL:', url);
 
@@ -246,7 +246,7 @@ app.delete('/delete-url', async (req, res) => {
     }
 });
 
-app.put('/update-url', async (req, res) => {
+app.put('/api/update-url', async (req, res) => {
     const { oldUrl, newUrl } = req.body;
     console.log('Request to update URL:', oldUrl, 'to', newUrl);
 
