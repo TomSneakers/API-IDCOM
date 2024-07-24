@@ -28,13 +28,10 @@ app.use('/auth', authRoutes);
 
 const urlSchema = new mongoose.Schema({
     url: { type: String, required: true },
-    statusHistory: [{
-        status: { type: Number },
-        timestamp: { type: Date, default: Date.now }
-    }]
 });
 
 const Url = mongoose.model('Url', urlSchema);
+
 
 const tokenSchema = new mongoose.Schema({
     token: { type: String, required: true }
@@ -47,22 +44,29 @@ const testUrls = async (urls) => {
     return Promise.all(urls.map(async (urlObj) => {
         let status;
         try {
-            const response = await axios.get(urlObj.url);
+            console.log(`Testing URL: ${urlObj.url}`);
+            const response = await axios.get(urlObj.url, { timeout: 5000 }); // Timeout de 5 secondes
             status = response.status;
+            console.log(`URL: ${urlObj.url} responded with status: ${status}`);
         } catch (error) {
-            console.error(`Error testing URL ${urlObj.url}:`, error.message);
-            status = null;
+            if (error.response) {
+                status = error.response.status;
+                console.error(`Error response for URL ${urlObj.url}: ${status}`);
+            } else if (error.request) {
+                console.error(`No response received for URL ${urlObj.url}`);
+                status = 'No response'; // Utilisez une chaîne pour représenter l'absence de réponse
+            } else {
+                console.error(`Error setting up request for URL ${urlObj.url}:`, error.message);
+                status = 'Error';
+            }
         }
-
-        // Mettre à jour le statusHistory
-        await Url.findOneAndUpdate(
-            { url: urlObj.url },
-            { $push: { statusHistory: { status } } }
-        );
 
         return { url: urlObj.url, status };
     }));
 };
+
+
+
 
 
 const sendNotification = async (title, message) => {
@@ -93,9 +97,8 @@ const sendNotification = async (title, message) => {
         console.error('Error preparing notifications:', error);
     }
 };
-app.get('/api/home', (req, res) => {
-    res.send('Welcome to the home page');
-});
+
+
 app.post('/api/add-token', async (req, res) => {
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: 'Missing token' });
@@ -116,7 +119,24 @@ app.post('/api/add-token', async (req, res) => {
     }
 });
 
-cron.schedule('0 7,12,20 * * *', async () => {
+// cron.schedule('0 7,12,20 * * *', async () => {
+//     console.log('Running scheduled task at 7am, 12pm, and 8pm');
+//     try {
+//         const urls = await Url.find({});
+//         const results = await testUrls(urls);
+
+//         const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
+//         if (failedUrls.length > 0) {
+//             const message = `Des sites sont down : ${failedUrls.join(', ')}`;
+//             await sendNotification('IDCOM NOTIFICATION', message);
+//         } else {
+//             await sendNotification('IDCOM NOTIFICATION', '🎉 ILS VONT BIEN ! 🎉');
+//         }
+//     } catch (error) {
+//         console.error('Error during scheduled task:', error);
+//     }
+// }, { timezone: "Europe/Paris" });
+cron.schedule('* * * * *', async () => {
     console.log('Running scheduled task at 7am, 12pm, and 8pm');
     try {
         const urls = await Url.find({});
@@ -135,30 +155,20 @@ cron.schedule('0 7,12,20 * * *', async () => {
 }, { timezone: "Europe/Paris" });
 
 
+
 app.get('/api/urls-with-status', async (req, res) => {
     try {
         const urls = await Url.find({});
-        const results = await testUrls(urls.map(u => u.url));
-        const urlsWithStatus = urls.map((u, index) => ({
-            url: u.url,
-            status: results[index].status,
-        }));
-        res.json(urlsWithStatus);
+        const results = await testUrls(urls); // Utiliser le schéma d'URL complet
+
+        res.json(results);
     } catch (error) {
         console.error('Error fetching URLs with status:', error);
         res.status(500).json({ error: 'Error fetching URLs with status' });
     }
 });
 
-app.get('/api/urls-with-status-history', async (req, res) => {
-    try {
-        const urls = await Url.find({});
-        res.json(urls);
-    } catch (error) {
-        console.error('Error fetching URLs with status history:', error);
-        res.status(500).json({ error: 'Error fetching URLs with status history' });
-    }
-});
+
 
 app.post('/api/add-url', async (req, res) => {
     const { url } = req.body;
@@ -173,6 +183,8 @@ app.post('/api/add-url', async (req, res) => {
         res.status(500).json({ error: 'Error adding URL' });
     }
 });
+
+
 
 app.get('/api/get-urls', async (req, res) => {
     try {
@@ -200,8 +212,7 @@ app.post('/api/test-urls', async (req, res) => {
 app.get('/api/test-all-urls', async (req, res) => {
     try {
         const urls = await Url.find({}).lean();
-        const urlStrings = urls.map(u => u.url);
-        const results = await testUrls(urlStrings);
+        const results = await testUrls(urls);
         res.json(results.map(result => ({
             url: result.url,
             status: result.status,
@@ -248,6 +259,7 @@ app.delete('/api/delete-url', async (req, res) => {
     }
 });
 
+
 app.put('/api/update-url', async (req, res) => {
     const { oldUrl, newUrl } = req.body;
     console.log('Request to update URL:', oldUrl, 'to', newUrl);
@@ -269,9 +281,11 @@ app.put('/api/update-url', async (req, res) => {
         res.json(urls); // Return updated list of URLs
     } catch (error) {
         console.error('Error updating URL:', error);
-        res.status(500).json({ error: 'Error updating URL' });
+        res.status500.json({ error: 'Error updating URL' });
     }
 });
+
+
 
 
 

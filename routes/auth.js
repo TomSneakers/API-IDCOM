@@ -18,6 +18,7 @@ router.post('/api/signup', async (req, res) => {
 router.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     const user = await User.findOne({ username });
+    console.log("login endpoint");
 
     if (!user || !(await user.comparePassword(password))) {
         return res.status(401).json({ error: 'Invalid username or password' });
