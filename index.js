@@ -9,14 +9,17 @@ require('dotenv').config();
 
 const expo = new Expo();
 const app = express();
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(cors());
 
 console.log(`Connecting to MongoDB URI: ${process.env.MONGODB_URI}`);
 
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+})
     .then(() => {
         console.log('Connected to MongoDB');
     })
@@ -24,7 +27,7 @@ mongoose.connect(process.env.MONGODB_URI)
         console.error('MongoDB connection error:', error);
     });
 
-app.use('/auth', authRoutes);
+app.use('/api', authRoutes);
 
 const urlSchema = new mongoose.Schema({
     url: { type: String, required: true },
@@ -32,13 +35,10 @@ const urlSchema = new mongoose.Schema({
 
 const Url = mongoose.model('Url', urlSchema);
 
-
 const tokenSchema = new mongoose.Schema({
     token: { type: String, required: true }
 });
 const Token = mongoose.model('Token', tokenSchema);
-
-
 
 const testUrls = async (urls) => {
     return Promise.all(urls.map(async (urlObj) => {
@@ -60,14 +60,9 @@ const testUrls = async (urls) => {
                 status = 'Error';
             }
         }
-
         return { url: urlObj.url, status };
     }));
 };
-
-
-
-
 
 const sendNotification = async (title, message) => {
     try {
@@ -98,7 +93,6 @@ const sendNotification = async (title, message) => {
     }
 };
 
-
 app.post('/api/add-token', async (req, res) => {
     const { token } = req.body;
     if (!token) return res.status(400).json({ error: 'Missing token' });
@@ -119,23 +113,6 @@ app.post('/api/add-token', async (req, res) => {
     }
 });
 
-// cron.schedule('0 7,12,20 * * *', async () => {
-//     console.log('Running scheduled task at 7am, 12pm, and 8pm');
-//     try {
-//         const urls = await Url.find({});
-//         const results = await testUrls(urls);
-
-//         const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
-//         if (failedUrls.length > 0) {
-//             const message = `Des sites sont down : ${failedUrls.join(', ')}`;
-//             await sendNotification('IDCOM NOTIFICATION', message);
-//         } else {
-//             await sendNotification('IDCOM NOTIFICATION', '🎉 ILS VONT BIEN ! 🎉');
-//         }
-//     } catch (error) {
-//         console.error('Error during scheduled task:', error);
-//     }
-// }, { timezone: "Europe/Paris" });
 cron.schedule('* * * * *', async () => {
     console.log('Running scheduled task at 7am, 12pm, and 8pm');
     try {
@@ -154,8 +131,6 @@ cron.schedule('* * * * *', async () => {
     }
 }, { timezone: "Europe/Paris" });
 
-
-
 app.get('/api/urls-with-status', async (req, res) => {
     try {
         const urls = await Url.find({});
@@ -167,8 +142,6 @@ app.get('/api/urls-with-status', async (req, res) => {
         res.status(500).json({ error: 'Error fetching URLs with status' });
     }
 });
-
-
 
 app.post('/api/add-url', async (req, res) => {
     const { url } = req.body;
@@ -183,8 +156,6 @@ app.post('/api/add-url', async (req, res) => {
         res.status(500).json({ error: 'Error adding URL' });
     }
 });
-
-
 
 app.get('/api/get-urls', async (req, res) => {
     try {
@@ -223,7 +194,6 @@ app.get('/api/test-all-urls', async (req, res) => {
     }
 });
 
-
 app.get('/api/get-tokens', async (req, res) => {
     try {
         const tokens = await Token.find({});
@@ -259,7 +229,6 @@ app.delete('/api/delete-url', async (req, res) => {
     }
 });
 
-
 app.put('/api/update-url', async (req, res) => {
     const { oldUrl, newUrl } = req.body;
     console.log('Request to update URL:', oldUrl, 'to', newUrl);
@@ -281,16 +250,12 @@ app.put('/api/update-url', async (req, res) => {
         res.json(urls); // Return updated list of URLs
     } catch (error) {
         console.error('Error updating URL:', error);
-        res.status500.json({ error: 'Error updating URL' });
+        res.status(500).json({ error: 'Error updating URL' });
     }
 });
 
-
-
-
-
-
-
-app.listen(port, '0.0.0.0', () => {
+app.listen(port, () => {
     console.log(`Server running at http://0.0.0.0:${port}`);
 });
+
+module.exports = app;
