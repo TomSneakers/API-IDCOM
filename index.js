@@ -113,23 +113,23 @@ app.post('/api/add-token', async (req, res) => {
     }
 });
 
-// cron.schedule('* * * * *', async () => {
-//     console.log('Running scheduled task at 7am, 12pm, and 8pm');
-//     try {
-//         const urls = await Url.find({});
-//         const results = await testUrls(urls);
+cron.schedule('* * * * *', async () => {
+    console.log('Running scheduled task at 7am, 12pm, and 8pm');
+    try {
+        const urls = await Url.find({});
+        const results = await testUrls(urls);
 
-//         const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
-//         if (failedUrls.length > 0) {
-//             const message = `Des sites sont down : ${failedUrls.join(', ')}`;
-//             await sendNotification('IDCOM NOTIFICATION', message);
-//         } else {
-//             await sendNotification('IDCOM NOTIFICATION', '🎉 ILS VONT BIEN ! 🎉');
-//         }
-//     } catch (error) {
-//         console.error('Error during scheduled task:', error);
-//     }
-// }, { timezone: "Europe/Paris" });
+        const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
+        if (failedUrls.length > 0) {
+            const message = `Des sites sont down : ${failedUrls.join(', ')}`;
+            await sendNotification('IDCOM NOTIFICATION', message);
+        } else {
+            await sendNotification('IDCOM NOTIFICATION', '🎉 ILS VONT BIEN ! 🎉');
+        }
+    } catch (error) {
+        console.error('Error during scheduled task:', error);
+    }
+}, { timezone: "Europe/Paris" });
 
 app.get('/api/urls-with-status', async (req, res) => {
     try {
