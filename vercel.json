@@ -1,6 +1,10 @@
 {
   "version": 2,
   "regions": ["fra1"],
+  "crons": [{
+    "path": "/api/cron",
+    "schedule": "0 10 * * *"
+  }],
   "builds": [
     {
       "src": "index.js",
@@ -9,7 +13,7 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/(.*)",
       "dest": "/index.js"
     }
   ]
