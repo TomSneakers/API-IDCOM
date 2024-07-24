@@ -113,8 +113,9 @@ app.post('/api/add-token', async (req, res) => {
     }
 });
 
-cron.schedule('* * * * *', async () => {
-    console.log('Running scheduled task at 7am, 12pm, and 8pm');
+// Ajoutez cette route pour exécuter la tâche cron
+app.get('/api/run-cron-task', async (req, res) => {
+    console.log('Running scheduled task via external trigger');
     try {
         const urls = await Url.find({});
         const results = await testUrls(urls);
@@ -126,10 +127,12 @@ cron.schedule('* * * * *', async () => {
         } else {
             await sendNotification('IDCOM NOTIFICATION', '🎉 ILS VONT BIEN ! 🎉');
         }
+        res.json({ message: 'Scheduled task executed successfully' });
     } catch (error) {
         console.error('Error during scheduled task:', error);
+        res.status(500).json({ error: 'Error during scheduled task' });
     }
-}, { timezone: "Europe/Paris" });
+});
 
 app.get('/api/urls-with-status', async (req, res) => {
     try {
