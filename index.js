@@ -6,7 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const { authenticateToken, checkRole } = require('./middleware/auth');
-const User = require('./models/User'); // Assurez-vous d'avoir le bon chemin pour le modèle User
+const User = require('./models/User'); // Assurez-vous que le modèle User est correctement importé
 require('dotenv').config();
 
 const expo = new Expo();
@@ -40,7 +40,8 @@ const urlSchema = new mongoose.Schema({
 const Url = mongoose.model('Url', urlSchema);
 
 const tokenSchema = new mongoose.Schema({
-    token: { type: String, required: true }
+    token: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Associez le jeton à un utilisateur
 });
 const Token = mongoose.model('Token', tokenSchema);
 
@@ -96,18 +97,19 @@ const sendNotification = async (title, message, tokens) => {
     }
 };
 
-app.post('/api/add-token', async (req, res) => {
+app.post('/api/add-token', authenticateToken, async (req, res) => {
     const { token } = req.body;
+    const userId = req.user.id; // Ajoutez l'utilisateur associé
     if (!token) return res.status(400).json({ error: 'Missing token' });
     if (!Expo.isExpoPushToken(token)) return res.status(400).json({ error: 'Invalid token' });
 
     try {
-        const existingToken = await Token.findOne({ token });
+        const existingToken = await Token.findOne({ token, userId });
         if (existingToken) {
             return res.status(200).json({ message: 'Token already registered', token: existingToken });
         }
 
-        const newToken = new Token({ token });
+        const newToken = new Token({ token, userId });
         await newToken.save();
         res.json({ message: 'Token successfully added', token: newToken });
     } catch (error) {
@@ -128,6 +130,8 @@ app.get('/api/run-cron-task', async (req, res) => {
 
             const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
             const tokens = await Token.find({ userId: user._id });
+
+            console.log(`User ${user._id} has tokens:`, tokens);
 
             if (failedUrls.length > 0) {
                 const message = `Des sites sont down : ${failedUrls.join(', ')}`;
