@@ -5,6 +5,7 @@ const axios = require('axios');
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
+const { authenticateToken, checkRole } = require('./middleware/auth');
 require('dotenv').config();
 
 const expo = new Expo();
@@ -31,6 +32,8 @@ app.use('/api', authRoutes);
 
 const urlSchema = new mongoose.Schema({
     url: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    role: { type: String, default: null } // Role that can access this URL
 });
 
 const Url = mongoose.model('Url', urlSchema);
@@ -45,7 +48,7 @@ const testUrls = async (urls) => {
         let status;
         try {
             console.log(`Testing URL: ${urlObj.url}`);
-            const response = await axios.get(urlObj.url, { timeout: 5000 }); // Timeout de 5 secondes
+            const response = await axios.get(urlObj.url, { timeout: 5000 });
             status = response.status;
             console.log(`URL: ${urlObj.url} responded with status: ${status}`);
         } catch (error) {
@@ -114,10 +117,14 @@ app.post('/api/add-token', async (req, res) => {
 });
 
 // Ajoutez cette route pour exécuter la tâche cron
-app.get('/api/run-cron-task', async (req, res) => {
+app.get('/api/run-cron-task', authenticateToken, async (req, res) => {
     console.log('Running scheduled task via external trigger');
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
     try {
-        const urls = await Url.find({});
+        // Récupérer les URLs associées à l'utilisateur ou à son rôle
+        const urls = await Url.find({ $or: [{ userId }, { role: userRole }] });
         const results = await testUrls(urls);
 
         const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
@@ -134,11 +141,12 @@ app.get('/api/run-cron-task', async (req, res) => {
     }
 });
 
-app.get('/api/urls-with-status', async (req, res) => {
-    try {
-        const urls = await Url.find({});
-        const results = await testUrls(urls); // Utiliser le schéma d'URL complet
 
+app.get('/api/urls-with-status', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+    try {
+        const urls = await Url.find({ userId });
+        const results = await testUrls(urls);
         res.json(results);
     } catch (error) {
         console.error('Error fetching URLs with status:', error);
@@ -146,12 +154,14 @@ app.get('/api/urls-with-status', async (req, res) => {
     }
 });
 
-app.post('/api/add-url', async (req, res) => {
-    const { url } = req.body;
+app.post('/api/add-url', authenticateToken, async (req, res) => {
+    const { url, role } = req.body;
+    const userId = req.user.id;
+
     if (!url) return res.status(400).json({ error: 'Missing URL' });
 
     try {
-        const newUrl = new Url({ url });
+        const newUrl = new Url({ url, userId, role });
         await newUrl.save();
         res.json({ message: 'URL successfully added', url: newUrl });
     } catch (error) {
@@ -160,9 +170,11 @@ app.post('/api/add-url', async (req, res) => {
     }
 });
 
-app.get('/api/get-urls', async (req, res) => {
+app.get('/api/get-urls', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
+
     try {
-        const urls = await Url.find({});
+        const urls = await Url.find({ userId });
         res.json(urls);
     } catch (error) {
         console.error('Error fetching URLs:', error);
@@ -170,12 +182,15 @@ app.get('/api/get-urls', async (req, res) => {
     }
 });
 
-app.post('/api/test-urls', async (req, res) => {
+app.post('/api/test-urls', authenticateToken, async (req, res) => {
     const { urls } = req.body;
+    const userId = req.user.id;
+
     if (!urls || !Array.isArray(urls)) return res.status(400).json({ error: 'Invalid URL list' });
 
     try {
-        const results = await testUrls(urls);
+        const userUrls = await Url.find({ userId, url: { $in: urls } });
+        const results = await testUrls(userUrls);
         res.json(results);
     } catch (error) {
         console.error('Error testing URLs:', error);
@@ -183,9 +198,10 @@ app.post('/api/test-urls', async (req, res) => {
     }
 });
 
-app.get('/api/test-all-urls', async (req, res) => {
+app.get('/api/test-all-urls', authenticateToken, async (req, res) => {
+    const userId = req.user.id;
     try {
-        const urls = await Url.find({}).lean();
+        const urls = await Url.find({ userId }).lean();
         const results = await testUrls(urls);
         res.json(results.map(result => ({
             url: result.url,
@@ -197,7 +213,7 @@ app.get('/api/test-all-urls', async (req, res) => {
     }
 });
 
-app.get('/api/get-tokens', async (req, res) => {
+app.get('/api/get-tokens', authenticateToken, checkRole(['admin']), async (req, res) => {
     try {
         const tokens = await Token.find({});
         res.json(tokens);
@@ -207,9 +223,9 @@ app.get('/api/get-tokens', async (req, res) => {
     }
 });
 
-app.delete('/api/delete-url', async (req, res) => {
+app.delete('/api/delete-url', authenticateToken, async (req, res) => {
     const { url } = req.body;
-    console.log('Request to delete URL:', url);
+    const userId = req.user.id;
 
     if (!url) {
         console.error('Missing URL in request body');
@@ -217,14 +233,12 @@ app.delete('/api/delete-url', async (req, res) => {
     }
 
     try {
-        const result = await Url.deleteOne({ url });
-        console.log('Delete result:', result);
-
+        const result = await Url.deleteOne({ url, userId });
         if (result.deletedCount === 0) {
             return res.status(404).json({ error: 'URL not found' });
         }
 
-        const urls = await Url.find({});
+        const urls = await Url.find({ userId });
         res.json(urls); // Return updated list of URLs
     } catch (error) {
         console.error('Error deleting URL:', error);
@@ -232,9 +246,9 @@ app.delete('/api/delete-url', async (req, res) => {
     }
 });
 
-app.put('/api/update-url', async (req, res) => {
+app.put('/api/update-url', authenticateToken, async (req, res) => {
     const { oldUrl, newUrl } = req.body;
-    console.log('Request to update URL:', oldUrl, 'to', newUrl);
+    const userId = req.user.id;
 
     if (!oldUrl || !newUrl) {
         console.error('Missing old URL or new URL in request body');
@@ -242,14 +256,12 @@ app.put('/api/update-url', async (req, res) => {
     }
 
     try {
-        const result = await Url.findOneAndUpdate({ url: oldUrl }, { url: newUrl }, { new: true });
-        console.log('Update result:', result);
-
+        const result = await Url.findOneAndUpdate({ url: oldUrl, userId }, { url: newUrl }, { new: true });
         if (!result) {
             return res.status(404).json({ error: 'URL not found' });
         }
 
-        const urls = await Url.find({});
+        const urls = await Url.find({ userId });
         res.json(urls); // Return updated list of URLs
     } catch (error) {
         console.error('Error updating URL:', error);

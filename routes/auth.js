@@ -1,9 +1,8 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { authenticateToken, checkRole } = require('../middleware/auth');
 
 const router = express.Router();
-
 const JWT_SECRET = 'your_jwt_secret';
 
 // Signup
@@ -22,25 +21,18 @@ router.post('/api/login', async (req, res) => {
         return res.status(401).json({ error: 'Invalid username or password' });
     }
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' });
+    const token = user.generateAuthToken();
     res.json({ token });
 });
-
-// Middleware for token verification
-const authenticateToken = (req, res, next) => {
-    const token = req.header('Authorization')?.split(' ')[1];
-    if (!token) return res.sendStatus(401);
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.user = user;
-        next();
-    });
-};
 
 // Protected route example
 router.get('/protected', authenticateToken, (req, res) => {
     res.json({ message: 'Protected route accessed!' });
+});
+
+// Example of a role-protected route
+router.post('/admin-only', authenticateToken, checkRole(['admin']), (req, res) => {
+    res.json({ message: 'Admin route accessed!' });
 });
 
 module.exports = router;
