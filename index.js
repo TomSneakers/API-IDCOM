@@ -67,9 +67,8 @@ const testUrls = async (urls) => {
     }));
 };
 
-const sendNotification = async (title, message) => {
+const sendNotification = async (title, message, tokens) => {
     try {
-        const tokens = await Token.find({});
         const messages = tokens.filter(({ token }) => Expo.isExpoPushToken(token)).map(({ token }) => ({
             to: token,
             sound: 'default',
@@ -121,27 +120,28 @@ app.get('/api/run-cron-task', async (req, res) => {
     console.log('Running scheduled task via external trigger');
 
     try {
-        // Récupérer les URLs associées à l'utilisateur ou à son rôle
-        const urls = await Url.find({});
-        const results = await testUrls(urls);
+        const users = await User.find({});
+        for (const user of users) {
+            const urls = await Url.find({ $or: [{ userId: user._id }, { role: user.role }] });
+            const results = await testUrls(urls);
 
-        const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
-        if (failedUrls.length > 0) {
-            const message = `Des sites sont down : ${failedUrls.join(', ')}`;
-            await sendNotification('IDCOM NOTIFICATION', message);
-        } else {
-            await sendNotification('IDCOM NOTIFICATION', '🎉 ILS VONT BIEN ! 🎉');
+            const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
+            const tokens = await Token.find({ userId: user._id });
+
+            if (failedUrls.length > 0) {
+                const message = `Des sites sont down : ${failedUrls.join(', ')}`;
+                await sendNotification('IDCOM NOTIFICATION', message, tokens);
+            } else {
+                await sendNotification('IDCOM NOTIFICATION', '🎉 ILS VONT BIEN ! 🎉', tokens);
+            }
         }
+
         res.json({ message: 'Scheduled task executed successfully' });
     } catch (error) {
         console.error('Error during scheduled task:', error);
         res.status(500).json({ error: 'Error during scheduled task' });
     }
 });
-
-
-
-
 
 app.get('/api/urls-with-status', authenticateToken, async (req, res) => {
     const userId = req.user.id;
