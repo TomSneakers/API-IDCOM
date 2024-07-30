@@ -6,7 +6,8 @@ const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const { authenticateToken, checkRole } = require('./middleware/auth');
-const User = require('./models/User'); // Assurez-vous que le modèle User est correctement importé
+const User = require('./models/User');
+const Token = require('./models/token'); 
 require('dotenv').config();
 
 const expo = new Expo();
@@ -38,12 +39,6 @@ const urlSchema = new mongoose.Schema({
 });
 
 const Url = mongoose.model('Url', urlSchema);
-
-const tokenSchema = new mongoose.Schema({
-    token: { type: String, required: true },
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Associez le jeton à un utilisateur
-});
-const Token = mongoose.model('Token', tokenSchema);
 
 const testUrls = async (urls) => {
     return Promise.all(urls.map(async (urlObj) => {
@@ -147,6 +142,7 @@ app.get('/api/run-cron-task', async (req, res) => {
         res.status(500).json({ error: 'Error during scheduled task' });
     }
 });
+
 
 app.get('/api/urls-with-status', authenticateToken, async (req, res) => {
     const userId = req.user.id;
