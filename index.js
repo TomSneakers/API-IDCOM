@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const { authenticateToken, checkRole } = require('./middleware/auth');
+import User from './models/User';
 require('dotenv').config();
 
 const expo = new Expo();
