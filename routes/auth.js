@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { Expo } = require('expo-server-sdk');
 const User = require('../models/User');
-const Token = require('../models/Token');
+const Token = require('../models/token');
 const { authenticateToken, checkRole } = require('../middleware/auth');
 
 const router = express.Router();
