@@ -117,14 +117,12 @@ app.post('/api/add-token', async (req, res) => {
 });
 
 // Ajoutez cette route pour exécuter la tâche cron
-app.get('/api/run-cron-task', authenticateToken, async (req, res) => {
+app.get('/api/run-cron-task', checkApiKey, async (req, res) => {
     console.log('Running scheduled task via external trigger');
-    const userId = req.user.id;
-    const userRole = req.user.role;
 
     try {
         // Récupérer les URLs associées à l'utilisateur ou à son rôle
-        const urls = await Url.find({ $or: [{ userId }, { role: userRole }] });
+        const urls = await Url.find({});
         const results = await testUrls(urls);
 
         const failedUrls = results.filter(r => r.status !== 200).map(r => r.url);
@@ -140,6 +138,7 @@ app.get('/api/run-cron-task', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Error during scheduled task' });
     }
 });
+
 
 
 app.get('/api/urls-with-status', authenticateToken, async (req, res) => {

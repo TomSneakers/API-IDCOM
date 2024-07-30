@@ -20,8 +20,16 @@ const checkRole = (roles) => (req, res, next) => {
     }
     next();
 };
+const checkApiKey = (req, res, next) => {
+    const apiKey = req.header('x-api-key');
+    if (apiKey !== process.env.CRON_API_KEY) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+    next();
+};
 
 module.exports = {
     authenticateToken,
     checkRole,
+    checkApiKey,
 };
