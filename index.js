@@ -117,7 +117,7 @@ app.post('/api/add-token', async (req, res) => {
 });
 
 // Ajoutez cette route pour exécuter la tâche cron
-app.get('/api/run-cron-task', checkApiKey, async (req, res) => {
+app.get('/api/run-cron-task', async (req, res) => {
     console.log('Running scheduled task via external trigger');
 
     try {
@@ -138,6 +138,7 @@ app.get('/api/run-cron-task', checkApiKey, async (req, res) => {
         res.status(500).json({ error: 'Error during scheduled task' });
     }
 });
+
 
 
 
