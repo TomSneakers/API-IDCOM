@@ -99,7 +99,7 @@ const sendNotification = async (title, message, tokens) => {
 
 app.post('/api/add-token', authenticateToken, async (req, res) => {
     const { token } = req.body;
-    const userId = req.user.id; // Ajoutez l'utilisateur associé
+    const userId = req.user.id; // Utilisez l'ID de l'utilisateur authentifié
     if (!token) return res.status(400).json({ error: 'Missing token' });
     if (!Expo.isExpoPushToken(token)) return res.status(400).json({ error: 'Invalid token' });
 
