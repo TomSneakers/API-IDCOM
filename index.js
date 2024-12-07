@@ -7,7 +7,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const { authenticateToken, checkRole } = require('./middleware/auth');
 const User = require('./models/User');
-const Token = require('./models/token'); 
+const Token = require('./models/token');
 require('dotenv').config();
 
 const expo = new Expo();
@@ -28,6 +28,7 @@ mongoose.connect(process.env.MONGODB_URI, {
     })
     .catch((error) => {
         console.error('MongoDB connection error:', error);
+        process.exit(1); // Stop le serveur si MongoDB ne se connecte pas
     });
 
 app.use('/api', authRoutes);

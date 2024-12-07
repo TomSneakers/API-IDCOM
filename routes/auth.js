@@ -8,6 +8,44 @@ const { authenticateToken, checkRole } = require('../middleware/auth');
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
+
+router.post('/api/signup', async (req, res) => {
+    const { username, password } = req.body;
+
+    console.log("Received signup request:", req.body);
+
+    if (!username || !password) {
+        console.error("Missing username or password");
+        return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    try {
+        const existingUser = await User.findOne({ username });
+        if (existingUser) {
+            console.error("Username already exists");
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+
+        const user = new User({ username, password });
+        console.log("Attempting to save new user...");
+        await user.save();
+
+        // Génère un token JWT
+        const token = jwt.sign(
+            { id: user._id, username: user.username },
+            process.env.JWT_SECRET || 'your_jwt_secret',
+            { expiresIn: '1h' }
+        );
+
+        console.log("User successfully created:", user);
+        res.status(201).json({ message: 'User created', token });
+    } catch (error) {
+        console.error("Error during signup:", error);
+        res.status(500).json({ error: 'Internal server error', details: error.message });
+    }
+});
+
+
 // Route to add token
 router.post('/api/add-token', authenticateToken, async (req, res) => {
     const { token } = req.body;
@@ -30,13 +68,6 @@ router.post('/api/add-token', authenticateToken, async (req, res) => {
     }
 });
 
-// Signup
-router.post('/api/signup', async (req, res) => {
-    const { username, password } = req.body;
-    const user = new User({ username, password });
-    await user.save();
-    res.status(201).json({ message: 'User created' });
-});
 
 // Login
 router.post('/api/login', async (req, res) => {
